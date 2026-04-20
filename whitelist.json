@@ -1,0 +1,22 @@
+{
+    "users": [
+        {
+            "mainNickname": "tenzarek",
+            "robloxNicknames": ["durkomaker", "player2", "pidor"],
+            "expiryDate": "21.04.2026",
+            "isLifetime": false
+        },
+        {
+            "mainNickname": "Админ",
+            "robloxNicknames": ["admin123", "admin456"],
+            "expiryDate": "01.01.2030",
+            "isLifetime": false
+        },
+        {
+            "mainNickname": "Тестер",
+            "robloxNicknames": ["tester1"],
+            "expiryDate": "",
+            "isLifetime": true
+        }
+    ]
+}
