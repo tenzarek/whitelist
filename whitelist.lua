@@ -1,7 +1,12 @@
--- Whitelist System
+-- Whitelist System + Watermark (оригинальный водяной знак, ник меняется на mainNickname)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+
+local Camera = Workspace.CurrentCamera
 
 -- ============================================
 -- НАСТРОЙКИ ВАЙТЛИСТА (МЕНЯЙ ЗДЕСЬ)
@@ -10,7 +15,7 @@ local WHITELIST = {
     {
         mainNickname = "tenzarek",
         robloxNicknames = {"durkomaker", "player2", "pidor"},
-        expiryDate = "21.04.2026",
+        expiryDate = "22.04.2026",
         isLifetime = false
     },
     {
@@ -29,6 +34,7 @@ local WHITELIST = {
 
 local userData = nil
 
+-- Функция для расчета дней
 local function getDaysLeft(dateString)
     if dateString == "" then return -1 end
     local day, month, year = dateString:match("(%d+)%.(%d+)%.(%d+)")
@@ -40,6 +46,7 @@ local function getDaysLeft(dateString)
     return math.floor(diff / 86400) + 1
 end
 
+-- Проверка вайтлиста
 local function checkWhitelist()
     local currentName = LocalPlayer.Name
     for _, user in ipairs(WHITELIST) do
@@ -66,7 +73,299 @@ local function kick(reason)
     LocalPlayer:Kick(reason)
 end
 
--- Информационное окно
+-- ============================================
+-- ВОДЯНОЙ ЗНАК (ОРИГИНАЛЬНЫЙ, НО НИК МЕНЯЕТСЯ)
+-- ============================================
+local WatermarkGui = nil
+local WatermarkFrame = nil
+local TenzoLabel = nil
+local SenseLabel = nil
+local UsernameLabel = nil
+local FPSLabel = nil
+local PingLabel = nil
+local TimeLabel = nil
+
+local FrameCount = 0
+local LastFPSUpdate = 0
+local FPS = 0
+local LastPingUpdate = 0
+local Ping = 0
+
+local function UpdateFPS()
+    FrameCount = FrameCount + 1
+    local now = tick()
+    if now - LastFPSUpdate >= 1 then
+        FPS = math.floor(FrameCount / (now - LastFPSUpdate))
+        FrameCount = 0
+        LastFPSUpdate = now
+    end
+end
+
+local function UpdatePing()
+    local now = tick()
+    if now - LastPingUpdate >= 1 then
+        local stats = game:GetService("Stats")
+        local pingStat = stats.Network.ServerStatsItem["Data Ping"]
+        Ping = math.floor(pingStat:GetValue())
+        LastPingUpdate = now
+    end
+end
+
+local function UpdateMSKTime()
+    local serverTime = os.time()
+    local timeTable = os.date("*t", serverTime)
+    local hours = timeTable.hour < 10 and "0" .. timeTable.hour or tostring(timeTable.hour)
+    local minutes = timeTable.min < 10 and "0" .. timeTable.min or tostring(timeTable.min)
+    return hours .. ":" .. minutes
+end
+
+local function CreateWatermark()
+    if WatermarkGui then
+        WatermarkGui:Destroy()
+        WatermarkGui = nil
+    end
+    
+    WatermarkGui = Instance.new("ScreenGui")
+    WatermarkGui.Name = "TenzoSenseWatermark"
+    WatermarkGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    WatermarkGui.IgnoreGuiInset = true
+    WatermarkGui.Parent = game.CoreGui
+    
+    WatermarkFrame = Instance.new("Frame")
+    WatermarkFrame.Name = "WatermarkFrame"
+    WatermarkFrame.Size = UDim2.new(0, 450, 0, 32)
+    WatermarkFrame.Position = UDim2.new(0.5, -225, 0.02, 0)
+    WatermarkFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    WatermarkFrame.BackgroundTransparency = 0.2
+    WatermarkFrame.BorderSizePixel = 0
+    WatermarkFrame.Active = true
+    WatermarkFrame.Draggable = true
+    WatermarkFrame.Parent = WatermarkGui
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 6)
+    UICorner.Parent = WatermarkFrame
+    
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(50, 50, 50)
+    UIStroke.Thickness = 1
+    UIStroke.Parent = WatermarkFrame
+    
+    local Container = Instance.new("Frame")
+    Container.Name = "Container"
+    Container.Size = UDim2.new(1, -10, 1, -6)
+    Container.Position = UDim2.new(0, 5, 0, 3)
+    Container.BackgroundTransparency = 1
+    Container.Parent = WatermarkFrame
+    
+    local LeftContainer = Instance.new("Frame")
+    LeftContainer.Name = "LeftContainer"
+    LeftContainer.Size = UDim2.new(0, 0, 1, 0)
+    LeftContainer.BackgroundTransparency = 1
+    LeftContainer.Parent = Container
+    
+    TenzoLabel = Instance.new("TextLabel")
+    TenzoLabel.Name = "TenzoLabel"
+    TenzoLabel.Size = UDim2.new(0, 0, 1, 0)
+    TenzoLabel.BackgroundTransparency = 1
+    TenzoLabel.Text = "tenzo"
+    TenzoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TenzoLabel.TextSize = 14
+    TenzoLabel.Font = Enum.Font.GothamBold
+    TenzoLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TenzoLabel.Parent = LeftContainer
+    
+    SenseLabel = Instance.new("TextLabel")
+    SenseLabel.Name = "SenseLabel"
+    SenseLabel.Size = UDim2.new(0, 0, 1, 0)
+    SenseLabel.Position = UDim2.new(0, 0, 0, 0)
+    SenseLabel.BackgroundTransparency = 1
+    SenseLabel.Text = "sense"
+    SenseLabel.TextColor3 = Color3.new(0, 255, 0)
+    SenseLabel.TextSize = 14
+    SenseLabel.Font = Enum.Font.GothamBold
+    SenseLabel.TextXAlignment = Enum.TextXAlignment.Left
+    SenseLabel.Parent = LeftContainer
+    
+    local Separator1 = Instance.new("TextLabel")
+    Separator1.Name = "Separator1"
+    Separator1.Size = UDim2.new(0, 10, 1, 0)
+    Separator1.Position = UDim2.new(0, 0, 0, 0)
+    Separator1.BackgroundTransparency = 1
+    Separator1.Text = "•"
+    Separator1.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Separator1.TextSize = 14
+    Separator1.Font = Enum.Font.Gotham
+    Separator1.TextXAlignment = Enum.TextXAlignment.Center
+    Separator1.Parent = Container
+    
+    -- НИКНЕЙМ - БУДЕТ ЗАМЕНЕН НА mainNickname
+    UsernameLabel = Instance.new("TextLabel")
+    UsernameLabel.Name = "UsernameLabel"
+    UsernameLabel.Size = UDim2.new(0, 0, 1, 0)
+    UsernameLabel.Position = UDim2.new(0, 0, 0, 0)
+    UsernameLabel.BackgroundTransparency = 1
+    UsernameLabel.Text = userData.mainNickname  -- <-- ЗДЕСЬ МЕНЯЕТСЯ НИК
+    UsernameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    UsernameLabel.TextSize = 12
+    UsernameLabel.Font = Enum.Font.Gotham
+    UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    UsernameLabel.Parent = Container
+    
+    local Separator2 = Instance.new("TextLabel")
+    Separator2.Name = "Separator2"
+    Separator2.Size = UDim2.new(0, 10, 1, 0)
+    Separator2.Position = UDim2.new(0, 0, 0, 0)
+    Separator2.BackgroundTransparency = 1
+    Separator2.Text = "•"
+    Separator2.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Separator2.TextSize = 14
+    Separator2.Font = Enum.Font.Gotham
+    Separator2.TextXAlignment = Enum.TextXAlignment.Center
+    Separator2.Parent = Container
+    
+    FPSLabel = Instance.new("TextLabel")
+    FPSLabel.Name = "FPSLabel"
+    FPSLabel.Size = UDim2.new(0, 0, 1, 0)
+    FPSLabel.Position = UDim2.new(0, 0, 0, 0)
+    FPSLabel.BackgroundTransparency = 1
+    FPSLabel.Text = "1488 FPS"
+    FPSLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    FPSLabel.TextSize = 12
+    FPSLabel.Font = Enum.Font.Gotham
+    FPSLabel.TextXAlignment = Enum.TextXAlignment.Left
+    FPSLabel.Parent = Container
+    
+    local Separator3 = Instance.new("TextLabel")
+    Separator3.Name = "Separator3"
+    Separator3.Size = UDim2.new(0, 10, 1, 0)
+    Separator3.Position = UDim2.new(0, 0, 0, 0)
+    Separator3.BackgroundTransparency = 1
+    Separator3.Text = "•"
+    Separator3.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Separator3.TextSize = 14
+    Separator3.Font = Enum.Font.Gotham
+    Separator3.TextXAlignment = Enum.TextXAlignment.Center
+    Separator3.Parent = Container
+    
+    PingLabel = Instance.new("TextLabel")
+    PingLabel.Name = "PingLabel"
+    PingLabel.Size = UDim2.new(0, 0, 1, 0)
+    PingLabel.Position = UDim2.new(0, 0, 0, 0)
+    PingLabel.BackgroundTransparency = 1
+    PingLabel.Text = "1488 PING"
+    PingLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    PingLabel.TextSize = 12
+    PingLabel.Font = Enum.Font.Gotham
+    PingLabel.TextXAlignment = Enum.TextXAlignment.Left
+    PingLabel.Parent = Container
+    
+    local Separator4 = Instance.new("TextLabel")
+    Separator4.Name = "Separator4"
+    Separator4.Size = UDim2.new(0, 10, 1, 0)
+    Separator4.Position = UDim2.new(0, 0, 0, 0)
+    Separator4.BackgroundTransparency = 1
+    Separator4.Text = "•"
+    Separator4.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Separator4.TextSize = 14
+    Separator4.Font = Enum.Font.Gotham
+    Separator4.TextXAlignment = Enum.TextXAlignment.Center
+    Separator4.Parent = Container
+    
+    TimeLabel = Instance.new("TextLabel")
+    TimeLabel.Name = "TimeLabel"
+    TimeLabel.Size = UDim2.new(0, 0, 1, 0)
+    TimeLabel.Position = UDim2.new(0, 0, 0, 0)
+    TimeLabel.BackgroundTransparency = 1
+    TimeLabel.Text = "14:88"
+    TimeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TimeLabel.TextSize = 12
+    TimeLabel.Font = Enum.Font.Gotham
+    TimeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TimeLabel.Parent = Container
+    
+    local function CalculateTextWidth(textLabel)
+        local temp = Instance.new("TextLabel")
+        temp.Text = textLabel.Text
+        temp.Font = textLabel.Font
+        temp.TextSize = textLabel.TextSize
+        temp.Size = UDim2.new(0, 10000, 0, 10000)
+        temp.Parent = game.CoreGui
+        local width = temp.TextBounds.X
+        temp:Destroy()
+        return width
+    end
+    
+    local function UpdateLayout()
+        local totalWidth = 0
+        local elements = {
+            {label = TenzoLabel, width = CalculateTextWidth(TenzoLabel)},
+            {label = SenseLabel, width = CalculateTextWidth(SenseLabel)},
+            {separator = Separator1, width = 10},
+            {label = UsernameLabel, width = CalculateTextWidth(UsernameLabel)},
+            {separator = Separator2, width = 10},
+            {label = FPSLabel, width = CalculateTextWidth(FPSLabel)},
+            {separator = Separator3, width = 10},
+            {label = PingLabel, width = CalculateTextWidth(PingLabel)},
+            {separator = Separator4, width = 10},
+            {label = TimeLabel, width = CalculateTextWidth(TimeLabel)}
+        }
+        
+        for i, element in ipairs(elements) do
+            totalWidth = totalWidth + element.width + (i < #elements and 4 or 0)
+        end
+        
+        local currentX = 0
+        for i, element in ipairs(elements) do
+            if element.label then
+                element.label.Position = UDim2.new(0, currentX, 0, 0)
+                element.label.Size = UDim2.new(0, element.width, 1, 0)
+                currentX = currentX + element.width + 4
+            elseif element.separator then
+                element.separator.Position = UDim2.new(0, currentX, 0, 0)
+                element.separator.Size = UDim2.new(0, element.width, 1, 0)
+                currentX = currentX + element.width + 4
+            end
+        end
+        
+        WatermarkFrame.Size = UDim2.new(0, totalWidth + 20, 0, 32)
+    end
+    
+    UpdateLayout()
+    
+    RunService.RenderStepped:Connect(function()
+        UpdateFPS()
+        UpdatePing()
+        
+        FPSLabel.Text = FPS .. " FPS"
+        PingLabel.Text = Ping .. " PING"
+        TimeLabel.Text = UpdateMSKTime() .. ""
+        
+        UpdateLayout()
+    end)
+    
+    WatermarkFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local dragStart = input.Position
+            local frameStart = WatermarkFrame.Position
+            
+            local connection
+            connection = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    connection:Disconnect()
+                else
+                    local delta = input.Position - dragStart
+                    WatermarkFrame.Position = UDim2.new(
+                        frameStart.X.Scale, frameStart.X.Offset + delta.X,
+                        frameStart.Y.Scale, frameStart.Y.Offset + delta.Y
+                    )
+                end
+            end)
+        end
+    end)
+end
+
+-- Информационное окно (правый верхний угол)
 local function showInfo()
     local gui = Instance.new("ScreenGui")
     gui.Name = "UserInfo"
@@ -74,7 +373,7 @@ local function showInfo()
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 60)
-    frame.Position = UDim2.new(1, -210, 0, 10)
+    frame.Position = UDim2.new(1, -210, 0, 50)
     frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.BackgroundTransparency = 0.2
     frame.BorderSizePixel = 0
@@ -161,7 +460,9 @@ local function showInfo()
     return gui
 end
 
+-- ============================================
 -- ЗАПУСК
+-- ============================================
 local status, result = checkWhitelist()
 
 if not status then
@@ -196,18 +497,11 @@ if not status then
     return
 end
 
+-- СОЗДАЕМ ВОДЯНОЙ ЗНАК (НИК УЖЕ БУДЕТ mainNickname)
+CreateWatermark()
+
 -- ПОКАЗЫВАЕМ ИНФО ОКНО
 showInfo()
-
--- МЕНЯЕМ НИК В ВОДЯНОМ ЗНАКЕ (старый не трогаем, просто меняем текст)
-task.wait(1)
-local watermarkFrame = game.CoreGui:FindFirstChild("TenzoSenseWatermark")
-if watermarkFrame and watermarkFrame:FindFirstChild("Container") then
-    local usernameLabel = watermarkFrame.Container:FindFirstChild("UsernameLabel")
-    if usernameLabel then
-        usernameLabel.Text = userData.mainNickname
-    end
-end
 
 -- УВЕДОМЛЕНИЕ
 task.wait(0.5)
