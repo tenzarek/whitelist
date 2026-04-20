@@ -5,7 +5,7 @@ local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 
 -- НАСТРОЙКИ - ИЗМЕНИ ПОД СЕБЯ
-local WHITELIST_URL = "https://raw.githubusercontent.com/ТВОЙ_АКК/ТВОЙ_РЕПО/main/whitelist.json"
+local WHITELIST_URL = "https://raw.githubusercontent.com/tenzarek/whitelist/refs/heads/main/whitelist.json"
 
 local userData = nil
 
