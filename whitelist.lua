@@ -1,40 +1,33 @@
--- Whitelist System + Watermark (оригинальный водяной знак, ник меняется на mainNickname)
+-- TENZOSENSE - ПОЛНЫЙ СКРИПТ С ВАЙТЛИСТОМ
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
-
 local Camera = Workspace.CurrentCamera
 
 -- ============================================
--- НАСТРОЙКИ ВАЙТЛИСТА (МЕНЯЙ ЗДЕСЬ)
+-- ВАЙТЛИСТ (МЕНЯЙ ЗДЕСЬ)
 -- ============================================
 local WHITELIST = {
     {
-        mainNickname = "nigga",
-        robloxNicknames = {"pidorak", "player2", "pidor"},
-        expiryDate = "22.04.2026",
+        mainNickname = "tenzarek",     -- БУДЕТ ПОКАЗЫВАТЬСЯ В ВАТЕРМАРКЕ
+        robloxNicknames = {"durkomaker", "tenzarek"}, -- ТВОИ НИКИ В РОБЛОКСЕ
+        expiryDate = "22.04.2026",      -- ДАТА ОКОНЧАНИЯ
         isLifetime = false
     },
-    {
-        mainNickname = "Админ",
-        robloxNicknames = {"admin123", "admin456"},
-        expiryDate = "01.01.2030",
-        isLifetime = false
-    },
-    {
-        mainNickname = "Тестер",
-        robloxNicknames = {"tester1"},
-        expiryDate = "",
-        isLifetime = true
-    }
+    -- ДОБАВЛЯЙ ДРУГИХ ПОЛЬЗОВАТЕЛЕЙ СЮДА:
+    -- {
+    --     mainNickname = "ИмяДляВодяногоЗнака",
+    --     robloxNicknames = {"ник1", "ник2"},
+    --     expiryDate = "31.12.2026",
+    --     isLifetime = false
+    -- },
 }
 
 local userData = nil
 
--- Функция для расчета дней
+-- РАСЧЕТ ДНЕЙ
 local function getDaysLeft(dateString)
     if dateString == "" then return -1 end
     local day, month, year = dateString:match("(%d+)%.(%d+)%.(%d+)")
@@ -46,7 +39,7 @@ local function getDaysLeft(dateString)
     return math.floor(diff / 86400) + 1
 end
 
--- Проверка вайтлиста
+-- ПРОВЕРКА ВАЙТЛИСТА
 local function checkWhitelist()
     local currentName = LocalPlayer.Name
     for _, user in ipairs(WHITELIST) do
@@ -69,12 +62,40 @@ local function checkWhitelist()
     return false, "Вас нет в вайтлисте"
 end
 
-local function kick(reason)
-    LocalPlayer:Kick(reason)
+-- ЗАПУСК ПРОВЕРКИ
+local status, result = checkWhitelist()
+
+if not status then
+    -- КИКАЕМ ЕСЛИ НЕ В СПИСКЕ
+    local errGui = Instance.new("ScreenGui")
+    errGui.Parent = game.CoreGui
+    local errFrame = Instance.new("Frame")
+    errFrame.Size = UDim2.new(0, 300, 0, 100)
+    errFrame.Position = UDim2.new(0.5, -150, 0.5, -50)
+    errFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    errFrame.BackgroundTransparency = 0.1
+    errFrame.BorderSizePixel = 0
+    errFrame.Parent = errGui
+    local errCorner = Instance.new("UICorner")
+    errCorner.CornerRadius = UDim.new(0, 10)
+    errCorner.Parent = errFrame
+    local errText = Instance.new("TextLabel")
+    errText.Size = UDim2.new(1, -20, 1, -20)
+    errText.Position = UDim2.new(0, 10, 0, 10)
+    errText.BackgroundTransparency = 1
+    errText.Text = result
+    errText.TextColor3 = Color3.fromRGB(255, 100, 100)
+    errText.TextSize = 14
+    errText.Font = Enum.Font.GothamBold
+    errText.TextWrapped = true
+    errText.Parent = errFrame
+    task.wait(2)
+    LocalPlayer:Kick(result)
+    return
 end
 
 -- ============================================
--- ВОДЯНОЙ ЗНАК (ОРИГИНАЛЬНЫЙ, НО НИК МЕНЯЕТСЯ)
+-- ВОДЯНОЙ ЗНАК (С МЕЙН НИКОМ)
 -- ============================================
 local WatermarkGui = nil
 local WatermarkFrame = nil
@@ -199,13 +220,13 @@ local function CreateWatermark()
     Separator1.TextXAlignment = Enum.TextXAlignment.Center
     Separator1.Parent = Container
     
-    -- НИКНЕЙМ - БУДЕТ ЗАМЕНЕН НА mainNickname
+    -- МЕЙН НИКНЕЙМ (НЕ РОБЛОКС НИК, А ТОТ ЧТО В ВАЙТЛИСТЕ)
     UsernameLabel = Instance.new("TextLabel")
     UsernameLabel.Name = "UsernameLabel"
     UsernameLabel.Size = UDim2.new(0, 0, 1, 0)
     UsernameLabel.Position = UDim2.new(0, 0, 0, 0)
     UsernameLabel.BackgroundTransparency = 1
-    UsernameLabel.Text = userData.mainNickname  -- <-- ЗДЕСЬ МЕНЯЕТСЯ НИК
+    UsernameLabel.Text = userData.mainNickname  -- <-- МЕЙН НИК ИЗ ВАЙТЛИСТА
     UsernameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     UsernameLabel.TextSize = 12
     UsernameLabel.Font = Enum.Font.Gotham
@@ -365,15 +386,17 @@ local function CreateWatermark()
     end)
 end
 
--- Информационное окно (правый верхний угол)
+-- ============================================
+-- ИНФОРМАЦИОННОЕ ОКНО СПРАВА СВЕРХУ
+-- ============================================
 local function showInfo()
     local gui = Instance.new("ScreenGui")
     gui.Name = "UserInfo"
     gui.Parent = game.CoreGui
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 200, 0, 60)
-    frame.Position = UDim2.new(1, -210, 0, 50)
+    frame.Size = UDim2.new(0, 220, 0, 70)
+    frame.Position = UDim2.new(1, -230, 0, 50)
     frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.BackgroundTransparency = 0.2
     frame.BorderSizePixel = 0
@@ -390,7 +413,7 @@ local function showInfo()
     stroke.Parent = frame
     
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 20)
+    title.Size = UDim2.new(1, 0, 0, 22)
     title.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
     title.BackgroundTransparency = 0.3
     title.Text = "TENZOSENSE"
@@ -399,9 +422,10 @@ local function showInfo()
     title.Font = Enum.Font.GothamBold
     title.Parent = frame
     
+    -- МЕЙН НИКНЕЙМ В ИНФО ОКНЕ
     local nickLabel = Instance.new("TextLabel")
-    nickLabel.Size = UDim2.new(1, -10, 0, 20)
-    nickLabel.Position = UDim2.new(0, 5, 0, 22)
+    nickLabel.Size = UDim2.new(1, -10, 0, 22)
+    nickLabel.Position = UDim2.new(0, 5, 0, 24)
     nickLabel.BackgroundTransparency = 1
     nickLabel.Text = userData.mainNickname
     nickLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -410,9 +434,10 @@ local function showInfo()
     nickLabel.TextXAlignment = Enum.TextXAlignment.Left
     nickLabel.Parent = frame
     
+    -- ДНИ ДО ИСТЕЧЕНИЯ
     local subLabel = Instance.new("TextLabel")
-    subLabel.Size = UDim2.new(1, -10, 0, 16)
-    subLabel.Position = UDim2.new(0, 5, 0, 42)
+    subLabel.Size = UDim2.new(1, -10, 0, 18)
+    subLabel.Position = UDim2.new(0, 5, 0, 48)
     subLabel.BackgroundTransparency = 1
     subLabel.TextSize = 10
     subLabel.Font = Enum.Font.Gotham
@@ -432,7 +457,7 @@ local function showInfo()
         end
     end
     
-    -- Перетаскивание
+    -- ПЕРЕТАСКИВАНИЕ ОКНА
     local drag = false
     local dragStart, frameStart
     
@@ -456,62 +481,12 @@ local function showInfo()
             drag = false
         end
     end)
-    
-    return gui
 end
 
 -- ============================================
--- ЗАПУСК
+-- ЗАПУСК ВСЕГО
 -- ============================================
-local status, result = checkWhitelist()
-
-if not status then
-    local errGui = Instance.new("ScreenGui")
-    errGui.Parent = game.CoreGui
-    
-    local errFrame = Instance.new("Frame")
-    errFrame.Size = UDim2.new(0, 250, 0, 80)
-    errFrame.Position = UDim2.new(0.5, -125, 0.5, -40)
-    errFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    errFrame.BackgroundTransparency = 0.1
-    errFrame.BorderSizePixel = 0
-    errFrame.Parent = errGui
-    
-    local errCorner = Instance.new("UICorner")
-    errCorner.CornerRadius = UDim.new(0, 10)
-    errCorner.Parent = errFrame
-    
-    local errText = Instance.new("TextLabel")
-    errText.Size = UDim2.new(1, -20, 1, -20)
-    errText.Position = UDim2.new(0, 10, 0, 10)
-    errText.BackgroundTransparency = 1
-    errText.Text = result
-    errText.TextColor3 = Color3.fromRGB(255, 100, 100)
-    errText.TextSize = 14
-    errText.Font = Enum.Font.GothamBold
-    errText.TextWrapped = true
-    errText.Parent = errFrame
-    
-    task.wait(2)
-    kick(result)
-    return
-end
-
--- СОЗДАЕМ ВОДЯНОЙ ЗНАК (НИК УЖЕ БУДЕТ mainNickname)
 CreateWatermark()
-
--- ПОКАЗЫВАЕМ ИНФО ОКНО
 showInfo()
 
--- УВЕДОМЛЕНИЕ
-task.wait(0.5)
-if Rayfield then
-    local msg = userData.isLifetime and "LIFETIME" or (getDaysLeft(userData.expiryDate) .. " days left")
-    Rayfield:Notify({
-        Title = "Welcome " .. userData.mainNickname,
-        Content = msg,
-        Duration = 3
-    })
-end
-
-print("Whitelist OK - " .. userData.mainNickname)
+print("TenzoSense loaded - " .. userData.mainNickname)
