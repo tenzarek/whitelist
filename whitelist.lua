@@ -1,14 +1,13 @@
--- Whitelist System
+-- Whitelist System with Info Display (No Buttons)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 
 -- НАСТРОЙКИ - ИЗМЕНИ ПОД СЕБЯ
 local WHITELIST_URL = "https://raw.githubusercontent.com/ТВОЙ_АКК/ТВОЙ_РЕПО/main/whitelist.json"
--- ИЛИ pastebin: local WHITELIST_URL = "https://pastebin.com/raw/ТВОЙ_КОД"
 
 local userData = nil
-local isWhitelisted = false
 
 -- Функция для парсинга даты
 local function parseDate(dateString)
@@ -77,251 +76,210 @@ local function kickPlayer(reason)
     LocalPlayer:Kick(reason)
 end
 
--- Запуск проверки
-local whitelistStatus, whitelistResult = checkWhitelist()
-
-if not whitelistStatus then
-    kickPlayer(whitelistResult)
-    return
-end
-
--- Если прошел вайтлист - показываем уведомление
-local daysLeftText = ""
-if whitelistResult == "Lifetime" then
-    daysLeftText = "Lifetime"
-elseif type(whitelistResult) == "number" then
-    daysLeftText = whitelistResult .. " days left"
-end
-
--- Уведомление через Rayfield (если Rayfield уже загружен)
-task.wait(1)
-if Rayfield then
-    Rayfield:Notify({
-        Title = "Whitelist",
-        Content = "Welcome " .. userData.mainNickname .. "! " .. daysLeftText,
-        Duration = 3
-    })
-end
-
--- Изменяем Watermark, чтобы показывал Main Nickname
-local function updateWatermarkWithMainNick()
-    -- Ждем пока создастся Watermark
-    task.wait(0.5)
-    local watermarkFrame = game.CoreGui:FindFirstChild("TenzoSenseWatermark")
-    if watermarkFrame then
-        local usernameLabel = watermarkFrame:FindFirstChild("Container"):FindFirstChild("UsernameLabel")
-        if usernameLabel and userData then
-            usernameLabel.Text = userData.mainNickname
-        end
-    end
-end
-
--- Создаем вкладку My Account
-local AccTab = Window:CreateTab("My Account", "game")
-
--- Функция создания окна профиля
-local function openProfileWindow()
-    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+-- СОЗДАНИЕ ИНФОРМАЦИОННОГО ОКНА В ПРАВОМ ВЕРХНЕМ УГЛУ
+local function createInfoDisplay()
+    local infoGui = Instance.new("ScreenGui")
+    infoGui.Name = "UserInfoDisplay"
+    infoGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    infoGui.IgnoreGuiInset = true
+    infoGui.Parent = game.CoreGui
     
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ProfileWindow"
-    gui.Parent = playerGui
-    
-    local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 300, 0, 250)
-    main.Position = UDim2.new(0.5, -150, 0.5, -125)
-    main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    main.BackgroundTransparency = 0.1
-    main.BorderSizePixel = 0
-    main.Parent = gui
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 220, 0, 70)
+    mainFrame.Position = UDim2.new(1, -230, 0, 10)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    mainFrame.BackgroundTransparency = 0.15
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = infoGui
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = main
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
     
-    local top = Instance.new("Frame")
-    top.Size = UDim2.new(1, 0, 0, 35)
-    top.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    top.BackgroundTransparency = 0.3
-    top.BorderSizePixel = 0
-    top.Parent = main
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 190, 40)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.5
+    stroke.Parent = mainFrame
     
-    local topCorner = Instance.new("UICorner")
-    topCorner.CornerRadius = UDim.new(0, 10)
-    topCorner.Parent = top
-    
+    -- Заголовок
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -50, 1, 0)
-    title.Position = UDim2.new(0, 15, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "My Profile"
+    title.Size = UDim2.new(1, 0, 0, 22)
+    title.Position = UDim2.new(0, 0, 0, 0)
+    title.BackgroundColor3 = Color3.fromRGB(255, 190, 40)
+    title.BackgroundTransparency = 0.2
+    title.Text = "USER INFO"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 14
+    title.TextSize = 10
     title.Font = Enum.Font.GothamBold
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = top
+    title.TextXAlignment = Enum.TextXAlignment.Center
+    title.Parent = mainFrame
     
-    local close = Instance.new("TextButton")
-    close.Size = UDim2.new(0, 30, 0, 30)
-    close.Position = UDim2.new(1, -35, 0, 2)
-    close.BackgroundTransparency = 1
-    close.Text = "✕"
-    close.TextColor3 = Color3.fromRGB(200, 200, 200)
-    close.TextSize = 18
-    close.Font = Enum.Font.GothamBold
-    close.Parent = top
-    
-    close.MouseButton1Click:Connect(function()
-        gui:Destroy()
-    end)
-    
-    close.MouseEnter:Connect(function()
-        close.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end)
-    close.MouseLeave:Connect(function()
-        close.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end)
-    
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -20, 1, -50)
-    container.Position = UDim2.new(0, 10, 0, 45)
-    container.BackgroundTransparency = 1
-    container.Parent = main
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 8)
+    titleCorner.Parent = title
     
     -- Main Nickname
     local mainNickLabel = Instance.new("TextLabel")
-    mainNickLabel.Size = UDim2.new(1, 0, 0, 25)
-    mainNickLabel.Position = UDim2.new(0, 0, 0, 10)
+    mainNickLabel.Name = "MainNick"
+    mainNickLabel.Size = UDim2.new(1, -10, 0, 20)
+    mainNickLabel.Position = UDim2.new(0, 5, 0, 24)
     mainNickLabel.BackgroundTransparency = 1
-    mainNickLabel.Text = "Main Nickname: " .. (userData and userData.mainNickname or "Unknown")
+    mainNickLabel.Text = "Nick: " .. (userData and userData.mainNickname or "Loading...")
     mainNickLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    mainNickLabel.TextSize = 13
+    mainNickLabel.TextSize = 11
     mainNickLabel.Font = Enum.Font.GothamBold
     mainNickLabel.TextXAlignment = Enum.TextXAlignment.Left
-    mainNickLabel.Parent = container
-    
-    -- Roblox Nickname
-    local robloxNickLabel = Instance.new("TextLabel")
-    robloxNickLabel.Size = UDim2.new(1, 0, 0, 25)
-    robloxNickLabel.Position = UDim2.new(0, 0, 0, 40)
-    robloxNickLabel.BackgroundTransparency = 1
-    robloxNickLabel.Text = "Roblox Nickname: @" .. (userData and userData.robloxNickname or "Unknown")
-    robloxNickLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    robloxNickLabel.TextSize = 12
-    robloxNickLabel.Font = Enum.Font.Gotham
-    robloxNickLabel.TextXAlignment = Enum.TextXAlignment.Left
-    robloxNickLabel.Parent = container
+    mainNickLabel.Parent = mainFrame
     
     -- Subscription
     local subLabel = Instance.new("TextLabel")
-    subLabel.Size = UDim2.new(1, 0, 0, 25)
-    subLabel.Position = UDim2.new(0, 0, 0, 70)
+    subLabel.Name = "SubLabel"
+    subLabel.Size = UDim2.new(1, -10, 0, 18)
+    subLabel.Position = UDim2.new(0, 5, 0, 44)
     subLabel.BackgroundTransparency = 1
-    
-    local subText = ""
-    if userData and userData.isLifetime then
-        subText = "Subscription: Lifetime"
-    elseif userData then
-        local days = getDaysRemaining(userData.expiryDate, false)
-        if days then
-            subText = "Subscription: " .. days .. " days left"
-            if days <= 7 then
-                subLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-            else
-                subLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            end
-        else
-            subText = "Subscription: Expired"
-            subLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-        end
-    else
-        subText = "Subscription: Unknown"
-    end
-    
-    subLabel.Text = subText
-    subLabel.TextSize = 12
+    subLabel.TextSize = 10
     subLabel.Font = Enum.Font.Gotham
     subLabel.TextXAlignment = Enum.TextXAlignment.Left
-    subLabel.Parent = container
+    subLabel.Parent = mainFrame
     
-    -- Разделитель
-    local divider = Instance.new("Frame")
-    divider.Size = UDim2.new(1, 0, 0, 1)
-    divider.Position = UDim2.new(0, 0, 0, 105)
-    divider.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    divider.BorderSizePixel = 0
-    divider.Parent = container
+    -- Обновление информации
+    local function updateDisplay()
+        if not userData then return end
+        
+        mainNickLabel.Text = "Nick: " .. userData.mainNickname
+        
+        if userData.isLifetime then
+            subLabel.Text = "Sub: Lifetime"
+            subLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        else
+            local days = getDaysRemaining(userData.expiryDate, false)
+            if days then
+                subLabel.Text = "Sub: " .. days .. " days left"
+                if days <= 7 then
+                    subLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                else
+                    subLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                end
+            else
+                subLabel.Text = "Sub: Expired"
+                subLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+            end
+        end
+    end
     
-    -- Статус
-    local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, 0, 0, 25)
-    statusLabel.Position = UDim2.new(0, 0, 0, 115)
-    statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Status: Active"
-    statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-    statusLabel.TextSize = 12
-    statusLabel.Font = Enum.Font.Gotham
-    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-    statusLabel.Parent = container
+    updateDisplay()
+    
+    -- Обновляем каждую минуту
+    task.spawn(function()
+        while infoGui and userData do
+            task.wait(60)
+            updateDisplay()
+        end
+    end)
     
     -- Перетаскивание окна
     local dragging = false
     local dragStart, frameStart
     
-    top.InputBegan:Connect(function(input)
+    title.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            frameStart = main.Position
+            frameStart = mainFrame.Position
         end
     end)
     
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            main.Position = UDim2.new(frameStart.X.Scale, frameStart.X.Offset + delta.X, frameStart.Y.Scale, frameStart.Y.Offset + delta.Y)
+            local newX = frameStart.X.Offset + delta.X
+            local newY = frameStart.Y.Offset + delta.Y
+            mainFrame.Position = UDim2.new(frameStart.X.Scale, newX, frameStart.Y.Scale, newY)
         end
     end)
     
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
+    
+    return infoGui
 end
 
--- Кнопка My Profile
-AccTab:CreateButton({
-    Name = "My Profile",
-    Callback = function()
-        if userData then
-            openProfileWindow()
-        else
-            Rayfield:Notify({
-                Title = "Error",
-                Content = "Failed to load profile data",
-                Duration = 2
-            })
-        end
-    end
-})
+-- ЗАПУСК ПРОВЕРКИ
+local whitelistStatus, whitelistResult = checkWhitelist()
 
--- Кнопка для проверки вайтлиста (на случай если нужно обновить)
-AccTab:CreateButton({
-    Name = "Refresh Whitelist",
-    Callback = function()
-        local status, result = checkWhitelist()
-        if status then
-            if result == "Lifetime" then
-                Rayfield:Notify({Title = "Whitelist", Content = "Lifetime access confirmed", Duration = 2})
-            else
-                Rayfield:Notify({Title = "Whitelist", Content = "Access confirmed. " .. result .. " days left", Duration = 2})
+if not whitelistStatus then
+    -- Показываем сообщение об ошибке и кикаем
+    local errorGui = Instance.new("ScreenGui")
+    errorGui.Parent = game.CoreGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 100)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -50)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    frame.BackgroundTransparency = 0.1
+    frame.BorderSizePixel = 0
+    frame.Parent = errorGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = frame
+    
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, -20, 1, -20)
+    text.Position = UDim2.new(0, 10, 0, 10)
+    text.BackgroundTransparency = 1
+    text.Text = whitelistResult
+    text.TextColor3 = Color3.fromRGB(255, 100, 100)
+    text.TextSize = 14
+    text.Font = Enum.Font.GothamBold
+    text.TextWrapped = true
+    text.Parent = frame
+    
+    task.wait(2)
+    kickPlayer(whitelistResult)
+    return
+end
+
+-- Если прошел вайтлист - создаем информационное окно
+createInfoDisplay()
+
+-- Меняем Watermark на Main Nickname
+local function updateWatermark()
+    task.wait(0.5)
+    local watermarkFrame = game.CoreGui:FindFirstChild("TenzoSenseWatermark")
+    if watermarkFrame then
+        local container = watermarkFrame:FindFirstChild("Container")
+        if container then
+            local usernameLabel = container:FindFirstChild("UsernameLabel")
+            if usernameLabel and userData then
+                usernameLabel.Text = userData.mainNickname
             end
-        else
-            Rayfield:Notify({Title = "Whitelist", Content = result, Duration = 2})
         end
     end
-})
+end
 
--- Обновляем Watermark
-updateWatermarkWithMainNick()
+updateWatermark()
+
+-- Уведомление (если Rayfield загружен)
+task.wait(1)
+if Rayfield then
+    local daysText = ""
+    if whitelistResult == "Lifetime" then
+        daysText = "Lifetime"
+    elseif type(whitelistResult) == "number" then
+        daysText = whitelistResult .. " days left"
+    end
+    Rayfield:Notify({
+        Title = "Welcome",
+        Content = userData.mainNickname .. " | " .. daysText,
+        Duration = 3,
+        Image = "user-check"
+    })
+end
+
+print("Whitelist: Access granted for " .. userData.mainNickname)
