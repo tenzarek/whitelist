@@ -1,14 +1,15 @@
--- Whitelist System - Исправленный
+-- Whitelist System - Работает с JSON
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
--- ССЫЛКА НА ТВОЙ ФАЙЛ НА GITHUB
+-- ССЫЛКА НА ТВОЙ JSON ФАЙЛ
 local WHITELIST_URL = "https://raw.githubusercontent.com/tenzarek/whitelist/refs/heads/main/whitelist.json"
 
 local userData = nil
 
--- ИСПРАВЛЕННАЯ функция для расчета дней
+-- Функция для расчета дней
 local function getDaysLeft(dateString)
     if dateString == "" then return -1 end
     
@@ -17,7 +18,6 @@ local function getDaysLeft(dateString)
         return nil 
     end
     
-    -- Устанавливаем время окончания на конец дня (23:59:59)
     local expiryTime = os.time({
         year = tonumber(year), 
         month = tonumber(month), 
@@ -34,29 +34,36 @@ local function getDaysLeft(dateString)
         return 0 
     end
     
-    -- +1 чтобы показывало оставшиеся дни включая сегодня
     return math.floor(diff / 86400) + 1
 end
 
--- Проверка вайтлиста
+-- Проверка вайтлиста (работает с JSON)
 local function checkWhitelist()
-    local success, data = pcall(function()
-        return loadstring(game:HttpGet(WHITELIST_URL))()
+    local success, response = pcall(function()
+        return game:HttpGet(WHITELIST_URL)
     end)
     
     if not success then
-        return false, "Ошибка загрузки"
+        return false, "Ошибка загрузки вайтлиста"
     end
     
+    local data = HttpService:JSONDecode(response)
     local currentName = LocalPlayer.Name
     
-    for _, user in ipairs(data) do
+    for _, user in ipairs(data.users) do
         for _, nick in ipairs(user.robloxNicknames) do
             if string.lower(nick) == string.lower(currentName) then
-                userData = user
+                userData = {
+                    mainNickname = user.mainNickname,
+                    robloxNickname = currentName,
+                    expiryDate = user.expiryDate,
+                    isLifetime = user.isLifetime
+                }
+                
                 if user.isLifetime then
                     return true, "Lifetime"
                 end
+                
                 local days = getDaysLeft(user.expiryDate)
                 if days and days > 0 then
                     return true, days
