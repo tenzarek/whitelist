@@ -1,11 +1,40 @@
--- Whitelist System - Работает с JSON
+-- Whitelist System - Встроенный (без внешних загрузок)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
 
--- ССЫЛКА НА ТВОЙ JSON ФАЙЛ
-local WHITELIST_URL = "https://raw.githubusercontent.com/tenzarek/whitelist/refs/heads/main/whitelist.json"
+-- ============================================
+-- НАСТРОЙКИ ВАЙТЛИСТА (МЕНЯЙ ЗДЕСЬ)
+-- ============================================
+local WHITELIST = {
+    {
+        mainNickname = "tenzarek",     -- Главный ник (будет в водяном знаке)
+        robloxNicknames = {"durkomaker", "player2", "pidor"}, -- Ники в Roblox
+        expiryDate = "22.04.2026",      -- Дата окончания (ДД.ММ.ГГГГ)
+        isLifetime = false               -- true = бессрочно, false = ограничено
+    },
+    {
+        mainNickname = "Админ",
+        robloxNicknames = {"admin123", "admin456"},
+        expiryDate = "01.01.2030",
+        isLifetime = false
+    },
+    {
+        mainNickname = "Тестер",
+        robloxNicknames = {"tester1"},
+        expiryDate = "",
+        isLifetime = true
+    }
+    -- ============================================
+    -- ДОБАВЛЯЙ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ СЮДА:
+    -- ============================================
+    -- {
+    --     mainNickname = "НовыйИгрок",
+    --     robloxNicknames = {"nick1", "nick2"},
+    --     expiryDate = "31.12.2026",
+    --     isLifetime = false
+    -- },
+}
 
 local userData = nil
 
@@ -37,20 +66,11 @@ local function getDaysLeft(dateString)
     return math.floor(diff / 86400) + 1
 end
 
--- Проверка вайтлиста (работает с JSON)
+-- Проверка вайтлиста
 local function checkWhitelist()
-    local success, response = pcall(function()
-        return game:HttpGet(WHITELIST_URL)
-    end)
-    
-    if not success then
-        return false, "Ошибка загрузки вайтлиста"
-    end
-    
-    local data = HttpService:JSONDecode(response)
     local currentName = LocalPlayer.Name
     
-    for _, user in ipairs(data.users) do
+    for _, user in ipairs(WHITELIST) do
         for _, nick in ipairs(user.robloxNicknames) do
             if string.lower(nick) == string.lower(currentName) then
                 userData = {
@@ -82,7 +102,7 @@ local function kick(reason)
     LocalPlayer:Kick(reason)
 end
 
--- Информационное окно
+-- Информационное окно (правый верхний угол)
 local function showInfo()
     local gui = Instance.new("ScreenGui")
     gui.Name = "UserInfo"
@@ -99,6 +119,12 @@ local function showInfo()
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255, 170, 0)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.5
+    stroke.Parent = frame
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 20)
@@ -143,7 +169,7 @@ local function showInfo()
         end
     end
     
-    -- Перетаскивание
+    -- Перетаскивание окна
     local drag = false
     local dragStart, frameStart
     
@@ -171,10 +197,13 @@ local function showInfo()
     return gui
 end
 
--- ЗАПУСК
+-- ============================================
+-- ЗАПУСК ПРОВЕРКИ
+-- ============================================
 local status, result = checkWhitelist()
 
 if not status then
+    -- Окно ошибки
     local errGui = Instance.new("ScreenGui")
     errGui.Parent = game.CoreGui
     
@@ -206,10 +235,10 @@ if not status then
     return
 end
 
--- Успех - показываем информацию
+-- Успех - показываем информационное окно
 local infoGui = showInfo()
 
--- Меняем Watermark
+-- Меняем Watermark на главный ник
 task.wait(0.5)
 local wm = game.CoreGui:FindFirstChild("TenzoSenseWatermark")
 if wm and wm:FindFirstChild("Container") then
