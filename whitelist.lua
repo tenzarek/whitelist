@@ -11,8 +11,8 @@ local Camera = Workspace.CurrentCamera
 -- ============================================
 local WHITELIST = {
     {
-        mainNickname = "tenzarek",     -- БУДЕТ ПОКАЗЫВАТЬСЯ В ВАТЕРМАРКЕ
-        robloxNicknames = {"durkomaker", "tenzarek"}, -- ТВОИ НИКИ В РОБЛОКСЕ
+        mainNickname = "FDISJOIOFJDSIOJFSD",     -- БУДЕТ ПОКАЗЫВАТЬСЯ В ВАТЕРМАРКЕ
+        robloxNicknames = {"DSFSDFSDFSDF", "tDFGDFGDFGDFk"}, -- ТВОИ НИКИ В РОБЛОКСЕ
         expiryDate = "22.04.2026",      -- ДАТА ОКОНЧАНИЯ
         isLifetime = false
     },
