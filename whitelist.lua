@@ -17,12 +17,12 @@ local WHITELIST = {
         isLifetime = true
     },
     -- ДОБАВЛЯЙ ДРУГИХ ПОЛЬЗОВАТЕЛЕЙ СЮДА:
-    -- {
-    --     mainNickname = "ИмяДляВодяногоЗнака",
-    --     robloxNicknames = {"ник1", "ник2"},
-    --     expiryDate = "31.12.2026",
-    --     isLifetime = false
-    -- },
+    {
+         mainNickname = "DiZyyyyy",
+        robloxNicknames = {"DiZyyyyyNvrLose", "ник2"},
+       expiryDate = "20.05.2026",
+        isLifetime = false
+    },
 }
 
 local userData = nil
