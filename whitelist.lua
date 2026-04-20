@@ -13,8 +13,8 @@ local Camera = Workspace.CurrentCamera
 -- ============================================
 local WHITELIST = {
     {
-        mainNickname = "tenzarek",
-        robloxNicknames = {"durkomaker", "player2", "pidor"},
+        mainNickname = "tenzare",
+        robloxNicknames = {"durkomake", "player2", "pidor"},
         expiryDate = "22.04.2026",
         isLifetime = false
     },
