@@ -14,7 +14,7 @@ local WHITELIST = {
         mainNickname = "tenzo",     -- БУДЕТ ПОКАЗЫВАТЬСЯ В ВАТЕРМАРКЕ
         robloxNicknames = {"durkomaker", "tDFGDFGDFGDFk"}, -- ТВОИ НИКИ В РОБЛОКСЕ
         expiryDate = "22.04.2026",      -- ДАТА ОКОНЧАНИЯ
-        isLifetime = false
+        isLifetime = true
     },
     -- ДОБАВЛЯЙ ДРУГИХ ПОЛЬЗОВАТЕЛЕЙ СЮДА:
     -- {
