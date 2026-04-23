@@ -1,4 +1,4 @@
--- TENZOSENSE - ПОЛНЫЙ СКРИПТ С ВАЙТЛИСТОМ
+-- TENZOSENSE
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -11,18 +11,20 @@ local Camera = Workspace.CurrentCamera
 -- ============================================
 local WHITELIST = {
     {
-        mainNickname = "tenzo",     -- БУДЕТ ПОКАЗЫВАТЬСЯ В ВАТЕРМАРКЕ
-        robloxNicknames = {"durkomaker", "tDFGDFGDFGDFk"}, -- ТВОИ НИКИ В РОБЛОКСЕ
-        expiryDate = "22.04.2026",      -- ДАТА ОКОНЧАНИЯ
-        isLifetime = true
-    },
-    -- ДОБАВЛЯЙ ДРУГИХ ПОЛЬЗОВАТЕЛЕЙ СЮДА:
-    {
-         mainNickname = "DiZyyyyy",
-        robloxNicknames = {"DiZyyyyyNvrLose", "ник2"},
-       expiryDate = "20.05.2026",
+        mainNickname = "tenzarek",
+        userIds = {8919667598},  -- ID пользователя
+        robloxNicknames = {"durkomaker"}, -- доп. проверка
+        expiryDate = "25.04.2026",
         isLifetime = false
     },
+    -- ДОБАВЛЯЙ НОВЫХ:
+    -- {
+    --     mainNickname = "Имя",
+    --     userIds = {123456789, 987654321}, -- можно несколько ID
+    --     robloxNicknames = {"ник1", "ник2"},
+    --     expiryDate = "31.12.2026",
+    --     isLifetime = false
+    -- },
 }
 
 local userData = nil
@@ -39,10 +41,30 @@ local function getDaysLeft(dateString)
     return math.floor(diff / 86400) + 1
 end
 
--- ПРОВЕРКА ВАЙТЛИСТА
-local function checkWhitelist()
+-- ТРУДНООБХОДИМАЯ ПРОВЕРКА (через UserId)
+local function checkWhitelistSecure()
+    local currentUserId = LocalPlayer.UserId
     local currentName = LocalPlayer.Name
+    
     for _, user in ipairs(WHITELIST) do
+        -- ПРОВЕРКА ПО ID (САМОЕ НАДЕЖНОЕ)
+        for _, id in ipairs(user.userIds or {}) do
+            if currentUserId == id then
+                userData = {
+                    mainNickname = user.mainNickname,
+                    robloxNickname = currentName,
+                    expiryDate = user.expiryDate,
+                    isLifetime = user.isLifetime
+                }
+                if user.isLifetime then return true, "Lifetime" end
+                local days = getDaysLeft(user.expiryDate)
+                if days and days > 0 then return true, days
+                else return false, "Срок действия подписки истек"
+                end
+            end
+        end
+        
+        -- ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА ПО ИМЕНИ (на случай если ID не указан)
         for _, nick in ipairs(user.robloxNicknames) do
             if string.lower(nick) == string.lower(currentName) then
                 userData = {
@@ -62,11 +84,39 @@ local function checkWhitelist()
     return false, "Вас нет в вайтлисте"
 end
 
--- ЗАПУСК ПРОВЕРКИ
-local status, result = checkWhitelist()
+-- ============================================
+-- ЗАЩИТА ОТ ПОДМЕНЫ МЕТОДОВ (анти-эксплойт)
+-- ============================================
+local function antiExploit()
+    -- Проверяем каждые 0.5 секунды, не подменили ли данные
+    local originalUserId = LocalPlayer.UserId
+    local originalName = LocalPlayer.Name
+    
+    task.spawn(function()
+        while true do
+            task.wait(0.5)
+            
+            -- Если ID изменился или имя изменилось на то, которого нет в вайтлисте
+            if LocalPlayer.UserId ~= originalUserId and LocalPlayer.UserId ~= 0 then
+                LocalPlayer:Kick("Anti-cheat: UserID mismatch")
+                return
+            end
+            
+            -- Доп. проверка на подмену имени
+            if LocalPlayer.Name ~= originalName then
+                LocalPlayer:Kick("Anti-cheat: Name spoofing detected")
+                return
+            end
+        end
+    end)
+end
+
+-- ============================================
+-- ПРОВЕРКА С ПЕРЕЗАПУСКОМ (если пытаются обойти через loadstring)
+-- ============================================
+local status, result = checkWhitelistSecure()
 
 if not status then
-    -- КИКАЕМ ЕСЛИ НЕ В СПИСКЕ
     local errGui = Instance.new("ScreenGui")
     errGui.Parent = game.CoreGui
     local errFrame = Instance.new("Frame")
@@ -93,6 +143,9 @@ if not status then
     LocalPlayer:Kick(result)
     return
 end
+
+-- ЗАПУСК ЗАЩИТЫ
+antiExploit()
 
 -- ============================================
 -- ВОДЯНОЙ ЗНАК (С МЕЙН НИКОМ)
@@ -220,13 +273,12 @@ local function CreateWatermark()
     Separator1.TextXAlignment = Enum.TextXAlignment.Center
     Separator1.Parent = Container
     
-    -- МЕЙН НИКНЕЙМ (НЕ РОБЛОКС НИК, А ТОТ ЧТО В ВАЙТЛИСТЕ)
     UsernameLabel = Instance.new("TextLabel")
     UsernameLabel.Name = "UsernameLabel"
     UsernameLabel.Size = UDim2.new(0, 0, 1, 0)
     UsernameLabel.Position = UDim2.new(0, 0, 0, 0)
     UsernameLabel.BackgroundTransparency = 1
-    UsernameLabel.Text = userData.mainNickname  -- <-- МЕЙН НИК ИЗ ВАЙТЛИСТА
+    UsernameLabel.Text = userData.mainNickname
     UsernameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     UsernameLabel.TextSize = 12
     UsernameLabel.Font = Enum.Font.Gotham
@@ -387,7 +439,7 @@ local function CreateWatermark()
 end
 
 -- ============================================
--- ИНФОРМАЦИОННОЕ ОКНО СПРАВА СВЕРХУ
+-- ИНФОРМАЦИОННОЕ ОКНО
 -- ============================================
 local function showInfo()
     local gui = Instance.new("ScreenGui")
@@ -422,7 +474,6 @@ local function showInfo()
     title.Font = Enum.Font.GothamBold
     title.Parent = frame
     
-    -- МЕЙН НИКНЕЙМ В ИНФО ОКНЕ
     local nickLabel = Instance.new("TextLabel")
     nickLabel.Size = UDim2.new(1, -10, 0, 22)
     nickLabel.Position = UDim2.new(0, 5, 0, 24)
@@ -434,7 +485,6 @@ local function showInfo()
     nickLabel.TextXAlignment = Enum.TextXAlignment.Left
     nickLabel.Parent = frame
     
-    -- ДНИ ДО ИСТЕЧЕНИЯ
     local subLabel = Instance.new("TextLabel")
     subLabel.Size = UDim2.new(1, -10, 0, 18)
     subLabel.Position = UDim2.new(0, 5, 0, 48)
@@ -457,7 +507,6 @@ local function showInfo()
         end
     end
     
-    -- ПЕРЕТАСКИВАНИЕ ОКНА
     local drag = false
     local dragStart, frameStart
     
@@ -484,9 +533,7 @@ local function showInfo()
 end
 
 -- ============================================
--- ЗАПУСК ВСЕГО
+-- ЗАПУСК
 -- ============================================
 CreateWatermark()
 showInfo()
-
-print("TenzoSense loaded - " .. userData.mainNickname)
